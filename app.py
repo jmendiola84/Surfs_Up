@@ -13,7 +13,7 @@ from flask import Flask, jsonify
 #################################################
 # Database Setup
 #################################################
-engine = create_engine("sqlite:///hawaii.sqlite")
+engine = create_engine("sqlite:///hawaii.sqlite",connect_args={'check_same_thread':False})
 
 # reflect an existing database into a new model
 Base = automap_base()
@@ -45,8 +45,8 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations</br>"
 		f"/api/v1.0/tobs</br>"
-		f"/api/v1.0/<start></br>"
-		f"/api/v1.0/<start>/<end>"
+		f"/api/v1.0/<<start>></br>"
+		f"/api/v1.0/<<start>>/<<end>>"
 		)
 	
 
@@ -55,9 +55,9 @@ def welcome():
 def precipitation():
     """Return a dictionary of precipitation information"""
     # Query for the dates and temperature observations from the last year
-    date = dt.datetime(2016, 8, 23)
+    date_prcp = dt.datetime(2016, 8, 23)
     
-    results = session.query(Measurement.date,Measurement.prcp).filter(Measurement.date > date).group_by(Measurement.date).order_by(Measurement.date).all()
+    results = session.query(Measurement.date,Measurement.prcp).filter(Measurement.date > date_prcp).group_by(Measurement.date).order_by(Measurement.date).all()
 	
     prec_data = []
     
@@ -83,9 +83,9 @@ def stations():
 def tobs():
     """Return a dictionary of temperature observations"""
     # Query for the dates and temperature observations from the last year
-    date = dt.datetime(2016, 8, 23)
+    date_tobs = dt.datetime(2016, 8, 23)
     
-    results = session.query(Measurement.date,Measurement.tobs).filter(Measurement.date > date).group_by(Measurement.date).order_by(Measurement.date).all()
+    results = session.query(Measurement.date,Measurement.tobs).filter(Measurement.date > date_tobs).group_by(Measurement.date).order_by(Measurement.date).all()
 	
     tobs_data = []
     
@@ -100,18 +100,49 @@ def tobs():
 def temp_st(start):
     """Return a dictionary of temperature observations"""
     # Query for the dates and temperature observations from the last year
-    min_tmp = session.query(func.min(Measurement.tobs)).filter(Measurement.date >= start).order_by(Measurement.date).all()
-    max_tmp = session.query(func.max(Measurement.tobs)).filter(Measurement.date >= start).order_by(Measurement.date).all()
-    avg_tmp = session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= start).order_by(Measurement.date).all()
-    return min_tmp, max_tmp, avg_tmp
+    results = session.query(Measurement.date,Measurement.tobs).filter(Measurement.date >= start).group_by(Measurement.date).order_by(Measurement.date).all()
+	    
+    for tobs in results:
+        tobs_dict = {}
+        tobs_dict[tobs.date] = tobs.tobs
+        
+        for key in tobs_dict.keys():
+            if start == key:
+                min_tmp = str(session.query(func.min(Measurement.tobs)).filter(Measurement.date >= start).order_by(Measurement.date).all())
+                max_tmp = str(session.query(func.max(Measurement.tobs)).filter(Measurement.date >= start).order_by(Measurement.date).all())
+                avg_tmp = str(session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= start).order_by(Measurement.date).all())
+                min_tmp = int((min_tmp.replace("[(","")).replace(",)]",""))
+                max_tmp = int((max_tmp.replace("[(","")).replace(",)]",""))
+                avg_tmp = float((avg_tmp.replace("[(","")).replace(",)]",""))
+
+                temps_calc = {"Min Temp":min_tmp, "Max Temp":max_tmp, "Avg Temp":avg_tmp}
+                
+                return jsonify(temps_calc)
+
+    return jsonify({"error": f"Date not found: {start}"}), 404
+
 
 @app.route("/api/v1.0/<start>/<end>")
 def temp_st_end(start, end):
-    min_tmp = session.query(func.min(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).order_by(Measurement.date).all()
-    max_tmp = session.query(func.max(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).order_by(Measurement.date).all()
-    avg_tmp = session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).order_by(Measurement.date).all()
-    return min_tmp, max_tmp, avg_tmp
+    results = session.query(Measurement.date,Measurement.tobs).filter(Measurement.date >= start).filter(Measurement.date <= end).order_by(Measurement.date).all()
+	    
+    for tobs in results:
+        tobs_dict = {}
+        tobs_dict[tobs.date] = tobs.tobs
 
+        for key in tobs_dict.keys():
+            if start == key:
+                min_tmp = str(session.query(func.min(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).order_by(Measurement.date).all())
+                max_tmp = str(session.query(func.max(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).order_by(Measurement.date).all())
+                avg_tmp = str(session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).order_by(Measurement.date).all())
+                min_tmp = int((min_tmp.replace("[(","")).replace(",)]",""))
+                max_tmp = int((max_tmp.replace("[(","")).replace(",)]",""))
+                avg_tmp = float((avg_tmp.replace("[(","")).replace(",)]",""))
+
+                temps_calc = {"Min Temp":min_tmp, "Max Temp":max_tmp, "Avg Temp":avg_tmp}                
+                return jsonify(temps_calc)
+
+    return jsonify({"error": f"Date not found: {start}"}), 404
 
 
 if __name__ == '__main__':
