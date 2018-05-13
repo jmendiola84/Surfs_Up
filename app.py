@@ -41,13 +41,34 @@ app = Flask(__name__)
 def welcome():
     """List all available api routes."""
     return (
-        f"HAWAII CLIMATE API<br/>"
-        f"Available Routes:<br/>"
-        f"/api/v1.0/precipitation<br/>"
-        f"/api/v1.0/stations</br>"
-		f"/api/v1.0/tobs</br>"
-		f"/api/v1.0/[start_date]</br>"
-		f"/api/v1.0/[start_date]/[end_date]"
+        f"<style> table, th, td {{ border: 1px solid black; border-collapse: collapse;}} </style>"
+        f"<h1 align=\"center\"><b>HAWAII CLIMATE API</b></h1>"
+        f"<table style=\"width:100%\">"
+        f"<tr>"
+        f"<th align=\"left\">Available Routes</th>"
+        f"<th align=\"left\">Description</th>"
+        f"</tr>"
+        f"<tr>"
+        f"<td>/api/v1.0/precipitation</td>"
+        f"<td>Return a json list of precipitation data in Hawaii from 08/23/2016 to 08/23/2017.</td>"
+        f"</tr>"
+        f"<tr>"
+        f"<td>/api/v1.0/stations</td>"
+        f"<td>Return a json list of Hawaii weather stations</td>"
+        f"</tr>"
+        f"<tr>"
+		f"<td>/api/v1.0/tobs</td>"
+		f"<td>Return a json list of Temperature Observations in Hawaii from 08/23/2016 to 08/23/2017.</td>"		
+		f"</tr>"
+        f"<tr>"
+		f"<td>/api/v1.0/[start-date]</td>"
+        f"<td>Json list of minimum, average, and max temperature for a given start date (data available: 01/01/2010 - 08/23/2017)</td>"
+		f"</tr>"
+        f"<tr>"
+        f"<td>/api/v1.0/[start-date]/[end-date]</td>"
+        f"<td> Json list of minimum, average, and max temperature for a start-end date range (data available: 01/01/2010 - 08/23/2017)</td>"
+        f"</tr>"
+        f"</table>"
 		)
 	
 
@@ -75,7 +96,6 @@ def stations():
     """Return a json list of stations from the dataset."""
     # Query all stations
     results = session.query(Measurement.station).group_by(Measurement.station).all()
-    # Create a dictionary from the row data and append to a list of all_passengers
     all_stations = list(np.ravel(results))
 
     return jsonify(all_stations)
@@ -99,8 +119,8 @@ def tobs():
 
 @app.route("/api/v1.0/<start>")
 def temp_st(start):
-    """Return a dictionary of temperature observations"""
-    # Query for the dates and temperature observations from the last year
+    """Return min, max and avg temperature from given date until 08/23/2017"""
+    # Query for Query for min, max and avg temperature for given date
     results = session.query(Measurement.date,Measurement.tobs).filter(Measurement.date >= start).group_by(Measurement.date).order_by(Measurement.date).all()
 	    
     for tobs in results:
@@ -125,6 +145,8 @@ def temp_st(start):
 
 @app.route("/api/v1.0/<start>/<end>")
 def temp_st_end(start, end):
+    """Return min, max and avg temperature for given dates"""
+    # Query for min, max and avg temperature for given dates
     results = session.query(Measurement.date,Measurement.tobs).filter(Measurement.date >= start).filter(Measurement.date <= end).order_by(Measurement.date).all()
 	    
     for tobs in results:
