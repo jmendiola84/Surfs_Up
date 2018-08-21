@@ -5,6 +5,5 @@
 
 ## Hawaii Climate Analysis
 #### *Project created as part of GWU Data Analytics course.*
-> Python, Flask, JSON
+> Python, Flask, JSON, SQLite
 
-#### [Demo](https://jmendiola84.github.io/weather-py)
